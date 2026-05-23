@@ -668,14 +668,26 @@ const UI = {
     activeResults: null,
 
     init() {
-        this.bindEvents();
-        this.loadSettings();
-        this.renderJobsTable();
-        this.updateActiveJobDisplay();
-        this.checkUrlParameters();
-        
-        // Initialize Resume Builder
-        ResumeBuilder.init();
+        console.log("ATS Copilot: UI initialization started.");
+        try {
+            this.bindEvents();
+            console.log("ATS Copilot: Events bound successfully.");
+            this.loadSettings();
+            console.log("ATS Copilot: Settings loaded successfully.");
+            this.renderJobsTable();
+            console.log("ATS Copilot: Jobs table rendered successfully.");
+            this.updateActiveJobDisplay();
+            console.log("ATS Copilot: Active job display updated successfully.");
+            this.checkUrlParameters();
+            console.log("ATS Copilot: URL parameters checked successfully.");
+            
+            // Initialize Resume Builder
+            ResumeBuilder.init();
+            console.log("ATS Copilot: Resume Builder initialized successfully.");
+            console.log("ATS Copilot: UI initialization completed successfully!");
+        } catch (error) {
+            console.error("ATS Copilot: Error during UI initialization:", error);
+        }
     },
 
     bindEvents() {
@@ -2173,4 +2185,13 @@ const ResumeBuilder = {
 };
 
 // Initialize UI on window load
-window.addEventListener('DOMContentLoaded', () => UI.init());
+console.log(`ATS Copilot: app.js loaded. Document readyState: ${document.readyState}`);
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', () => {
+        console.log("ATS Copilot: DOMContentLoaded event fired.");
+        UI.init();
+    });
+} else {
+    console.log("ATS Copilot: Document already loaded, initializing immediately.");
+    UI.init();
+}
