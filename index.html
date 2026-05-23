@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Career Copilot & ATS Tracker</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- App Shell -->
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-rocket-launch icon-glow"></i>
+                </div>
+                <span class="brand-text">Copilot<span>ATS</span></span>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <a href="#" class="menu-item active" data-target="job-tracker-view" id="menu-job-tracker">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Job Tracker</span>
+                </a>
+                <a href="#" class="menu-item" data-target="scan-view" id="menu-scan">
+                    <i class="fa-solid fa-qrcode"></i>
+                    <span>Resume Scanner</span>
+                </a>
+                <a href="#" class="menu-item disabled" data-target="results-view" id="menu-results">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Scan Results</span>
+                </a>
+                <a href="#" class="menu-item" data-target="resume-builder-view" id="menu-resume-builder">
+                    <i class="fa-solid fa-file-signature"></i>
+                    <span>Resume Builder</span>
+                </a>
+                <a href="#" class="menu-item" data-target="settings-view" id="menu-settings">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>AI Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-active-job" id="sidebar-active-job-card">
+                <span class="label">ACTIVE JOB TARGET</span>
+                <h4 id="sidebar-job-title">No Job Selected</h4>
+                <p id="sidebar-job-company">Select from Job Tracker</p>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar"><i class="fa-solid fa-user-astronaut"></i></div>
+                    <div class="user-info">
+                        <span class="user-name">Candidate Mode</span>
+                        <span class="user-status"><i class="fa-solid fa-circle pulse-green"></i> Local Database</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- TOP NAVBAR -->
+            <header class="top-navbar">
+                <h1 class="page-title" id="main-view-title">Target Job Tracker</h1>
+                <div class="nav-actions">
+                    <button class="btn btn-outline" id="load-demo-btn">
+                        <i class="fa-solid fa-database"></i> Load Sample Demo
+                    </button>
+                    <button class="btn btn-primary" id="open-add-job-modal">
+                        <i class="fa-solid fa-plus"></i> Add Target Job
+                    </button>
+                </div>
+            </header>
+
+            <!-- VIEW 1: JOB TRACKER VIEW -->
+            <section class="content-view active" id="job-tracker-view">
+                <div class="card table-card">
+                    <!-- Filters and Search -->
+                    <div class="table-controls">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="job-search" placeholder="Search jobs, companies or keywords...">
+                        </div>
+                        <div class="filter-group" style="display: flex; gap: 16px; align-items: center;">
+                            <div class="filter-item">
+                                <span class="filter-label">Filter:</span>
+                                <select id="status-filter">
+                                    <option value="all">All Statuses</option>
+                                    <option value="Target">Target</option>
+                                    <option value="Applied">Applied</option>
+                                    <option value="Interviewing">Interviewing</option>
+                                    <option value="Shortlisted">Shortlisted</option>
+                                    <option value="Rejected">Rejected</option>
+                                </select>
+                            </div>
+                            <div class="view-toggles-container" style="display: flex; background: var(--bg-tertiary); padding: 3px; border-radius: var(--border-radius-sm); border: 1px solid var(--glass-border);">
+                                <button class="btn btn-outline btn-sm active" id="btn-view-table" title="Table View" style="padding: 6px 12px; font-size: 0.8rem; border: none;"><i class="fa-solid fa-table-list"></i> Table</button>
+                                <button class="btn btn-outline btn-sm" id="btn-view-kanban" title="Kanban Board View" style="padding: 6px 12px; font-size: 0.8rem; border: none;"><i class="fa-solid fa-square-poll-horizontal"></i> Board</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column-based Job Table -->
+                    <div class="table-responsive" id="job-table-wrapper">
+                        <table class="job-table" id="job-table-element">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="status">Status <i class="fa-solid fa-sort"></i></th>
+                                    <th class="sortable" data-sort="title">Job Title <i class="fa-solid fa-sort"></i></th>
+                                    <th class="sortable" data-sort="company">Company <i class="fa-solid fa-sort"></i></th>
+                                    <th>Type</th>
+                                    <th class="sortable" data-sort="score">ATS Match <i class="fa-solid fa-sort"></i></th>
+                                    <th>Keywords</th>
+                                    <th class="sortable" data-sort="date">Added <i class="fa-solid fa-sort"></i></th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="job-table-body">
+                                <!-- Dynamic rows insert here -->
+                                <tr id="no-jobs-row">
+                                    <td colspan="8" class="text-center empty-state">
+                                        <i class="fa-regular fa-folder-open"></i>
+                                        <p>No jobs added yet. Click <strong>Add Target Job</strong> or <strong>Load Sample Demo</strong> to get started.</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Kanban Board Grid View -->
+                    <div class="kanban-board-wrapper" id="kanban-board-element" style="display: none; padding: 24px;">
+                        <div class="kanban-column" data-status="Target">
+                            <div class="kanban-column-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--accent-cyan-trans);">
+                                <span class="column-title" style="font-weight: 700; font-size: 0.88rem;"><i class="fa-solid fa-crosshairs text-cyan"></i> Target</span>
+                                <span class="column-count" id="count-target" style="background: var(--bg-tertiary); font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: bold;">0</span>
+                            </div>
+                            <div class="kanban-cards-container scrollbar-styled" id="kanban-Target" style="display: flex; flex-direction: column; gap: 12px; min-height: 250px; max-height: calc(100vh - 320px); overflow-y: auto; padding: 4px;" ondragover="event.preventDefault();" ondragenter="UI.handleDragEnter(event);" ondragleave="UI.handleDragLeave(event);" ondrop="UI.handleDrop(event, 'Target');"></div>
+                        </div>
+                        <div class="kanban-column" data-status="Applied">
+                            <div class="kanban-column-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--accent-blue-trans);">
+                                <span class="column-title" style="font-weight: 700; font-size: 0.88rem;"><i class="fa-solid fa-paper-plane text-blue"></i> Applied</span>
+                                <span class="column-count" id="count-applied" style="background: var(--bg-tertiary); font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: bold;">0</span>
+                            </div>
+                            <div class="kanban-cards-container scrollbar-styled" id="kanban-Applied" style="display: flex; flex-direction: column; gap: 12px; min-height: 250px; max-height: calc(100vh - 320px); overflow-y: auto; padding: 4px;" ondragover="event.preventDefault();" ondragenter="UI.handleDragEnter(event);" ondragleave="UI.handleDragLeave(event);" ondrop="UI.handleDrop(event, 'Applied');"></div>
+                        </div>
+                        <div class="kanban-column" data-status="Interviewing">
+                            <div class="kanban-column-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--accent-purple-trans);">
+                                <span class="column-title" style="font-weight: 700; font-size: 0.88rem;"><i class="fa-solid fa-comments text-purple"></i> Interview</span>
+                                <span class="column-count" id="count-interviewing" style="background: var(--bg-tertiary); font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: bold;">0</span>
+                            </div>
+                            <div class="kanban-cards-container scrollbar-styled" id="kanban-Interviewing" style="display: flex; flex-direction: column; gap: 12px; min-height: 250px; max-height: calc(100vh - 320px); overflow-y: auto; padding: 4px;" ondragover="event.preventDefault();" ondragenter="UI.handleDragEnter(event);" ondragleave="UI.handleDragLeave(event);" ondrop="UI.handleDrop(event, 'Interviewing');"></div>
+                        </div>
+                        <div class="kanban-column" data-status="Shortlisted">
+                            <div class="kanban-column-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--accent-green-trans);">
+                                <span class="column-title" style="font-weight: 700; font-size: 0.88rem;"><i class="fa-solid fa-trophy text-green"></i> Shortlisted</span>
+                                <span class="column-count" id="count-shortlisted" style="background: var(--bg-tertiary); font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: bold;">0</span>
+                            </div>
+                            <div class="kanban-cards-container scrollbar-styled" id="kanban-Shortlisted" style="display: flex; flex-direction: column; gap: 12px; min-height: 250px; max-height: calc(100vh - 320px); overflow-y: auto; padding: 4px;" ondragover="event.preventDefault();" ondragenter="UI.handleDragEnter(event);" ondragleave="UI.handleDragLeave(event);" ondrop="UI.handleDrop(event, 'Shortlisted');"></div>
+                        </div>
+                        <div class="kanban-column" data-status="Rejected">
+                            <div class="kanban-column-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--accent-red-trans);">
+                                <span class="column-title" style="font-weight: 700; font-size: 0.88rem;"><i class="fa-solid fa-ban text-red"></i> Rejected</span>
+                                <span class="column-count" id="count-rejected" style="background: var(--bg-tertiary); font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: bold;">0</span>
+                            </div>
+                            <div class="kanban-cards-container scrollbar-styled" id="kanban-Rejected" style="display: flex; flex-direction: column; gap: 12px; min-height: 250px; max-height: calc(100vh - 320px); overflow-y: auto; padding: 4px;" ondragover="event.preventDefault();" ondragenter="UI.handleDragEnter(event);" ondragleave="UI.handleDragLeave(event);" ondrop="UI.handleDrop(event, 'Rejected');"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: RESUME BUILDER VIEW -->
+            <section class="content-view" id="resume-builder-view">
+                <div class="builder-grid" style="display: grid; grid-template-columns: 1fr 1fr 280px; gap: 24px; height: 100%;">
+                    <!-- Left: Editor Card -->
+                    <div class="card builder-editor-card" style="display: flex; flex-direction: column; height: 100%;">
+                        <div class="card-header" style="flex-shrink: 0;">
+                            <h3><i class="fa-solid fa-file-pen"></i> Resume Form Editor</h3>
+                            <button class="btn btn-primary" id="btn-print-resume">
+                                <i class="fa-solid fa-print"></i> Export to PDF
+                            </button>
+                        </div>
+                        <div class="editor-sections scrollbar-styled" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; padding-right: 8px;">
+                            <!-- Personal Contact Details -->
+                            <div class="editor-section" style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 16px;">
+                                <h4 style="margin-bottom: 12px; color: var(--accent-cyan);">Personal Contact Info</h4>
+                                <div class="form-row" style="display: flex; gap: 16px; margin-bottom: 12px;">
+                                    <div class="form-group flex-1">
+                                        <label style="font-size: 0.8rem; margin-bottom: 4px; display: block;">Full Name</label>
+                                        <input type="text" id="rb-name" placeholder="Amit Sharma" style="width: 100%; background: var(--bg-tertiary); border: 1px solid var(--glass-border); padding: 8px; border-radius: var(--border-radius-sm); color: var(--text-primary);">
+                                    </div>
+                                    <div class="form-group flex-1">
+                                        <label style="font-size: 0.8rem; margin-bottom: 4px; display: block;">Email Address</label>
+                                        <input type="email" id="rb-email" placeholder="amit@example.com" style="width: 100%; background: var(--bg-tertiary); border: 1px solid var(--glass-border); padding: 8px; border-radius: var(--border-radius-sm); color: var(--text-primary);">
+                                    </div>
+                                </div>
+                                <div class="form-row" style="display: flex; gap: 16px; margin-bottom: 12px;">
+                                    <div class="form-group flex-1">
+                                        <label style="font-size: 0.8rem; margin-bottom: 4px; display: block;">Phone Number</label>
+                                        <input type="text" id="rb-phone" placeholder="+91 9999999999" style="width: 100%; background: var(--bg-tertiary); border: 1px solid var(--glass-border); padding: 8px; border-radius: var(--border-radius-sm); color: var(--text-primary);">
+                                    </div>
+                                    <div class="form-group flex-1">
+                                        <label style="font-size: 0.8rem; margin-bottom: 4px; display: block;">Location</label>
+                                        <input type="text" id="rb-location" placeholder="Hyderabad, India" style="width: 100%; background: var(--bg-tertiary); border: 1px solid var(--glass-border); padding: 8px; border-radius: var(--border-radius-sm); color: var(--text-primary);">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label style="font-size: 0.8rem; margin-bottom: 4px; display: block;">LinkedIn / Website Links</label>
+                                    <input type="text" id="rb-links" placeholder="linkedin.com/in/amit-demo" style="width: 100%; background: var(--bg-tertiary); border: 1px solid var(--glass-border); padding: 8px; border-radius: var(--border-radius-sm); color: var(--text-primary);">
+                                </div>
+                            </div>
+
+                            <!-- Professional Summary -->
+                            <div class="editor-section" style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 16px;">
+                                <h4 style="margin-bottom: 12px; color: var(--accent-cyan);">Professional Summary</h4>
+                                <div class="form-group">
+                                    <textarea id="rb-summary" placeholder="Summary statement..." style="width: 100%; height: 80px; background: var(--bg-tertiary); border: 1px solid var(--glass-border); padding: 8px; border-radius: var(--border-radius-sm); color: var(--text-primary); resize: vertical;"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Experience List -->
+                            <div class="editor-section" style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 16px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <h4 style="color: var(--accent-cyan);">Work Experience</h4>
+                                    <span class="help-text" style="font-size: 0.72rem; color: var(--text-muted);">Use "Copy Optimize" in scanner tabs to drop bullets here!</span>
+                                </div>
+                                <div id="rb-experience-container" style="display: flex; flex-direction: column; gap: 12px;">
+                                    <!-- Dynamic Blocks -->
+                                </div>
+                                <button class="btn btn-outline btn-block" id="rb-add-exp-btn" style="margin-top: 10px; font-size: 0.85rem; padding: 8px;">
+                                    <i class="fa-solid fa-plus"></i> Add Experience
+                                </button>
+                            </div>
+
+                            <!-- Skills -->
+                            <div class="editor-section" style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 16px;">
+                                <h4 style="margin-bottom: 12px; color: var(--accent-cyan);">Skills</h4>
+                                <div class="form-group">
+                                    <textarea id="rb-skills" placeholder="React, Node.js, AWS, JavaScript (comma separated)..." style="width: 100%; height: 60px; background: var(--bg-tertiary); border: 1px solid var(--glass-border); padding: 8px; border-radius: var(--border-radius-sm); color: var(--text-primary); resize: vertical;"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Education List -->
+                            <div class="editor-section" style="padding-bottom: 16px;">
+                                <h4 style="margin-bottom: 12px; color: var(--accent-cyan);">Education</h4>
+                                <div id="rb-education-container" style="display: flex; flex-direction: column; gap: 12px;">
+                                    <!-- Dynamic Blocks -->
+                                </div>
+                                <button class="btn btn-outline btn-block" id="rb-add-edu-btn" style="margin-top: 10px; font-size: 0.85rem; padding: 8px;">
+                                    <i class="fa-solid fa-plus"></i> Add Education
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Print Sheet Preview -->
+                    <div class="card builder-preview-card" style="background: #090c12; padding: 16px; overflow: hidden; display: flex; flex-direction: column; height: 100%;">
+                        <div class="preview-scroll-container scrollbar-styled" style="flex-grow: 1; overflow-y: auto; display: flex; justify-content: center;">
+                            <div class="resume-sheet printable-resume-sheet" id="rb-resume-print-sheet" style="box-shadow: 0 4px 15px rgba(0,0,0,0.8); background: #ffffff; color: #1e293b; padding: 36px; width: 612px; min-height: 792px; font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; line-height: 1.4;">
+                                <div class="print-header" style="text-align: center; border-bottom: 1.5px solid #475569; padding-bottom: 8px; margin-bottom: 16px;">
+                                    <h1 id="pv-name" style="font-size: 18pt; font-weight: bold; margin-bottom: 4px; font-family: 'Times New Roman', Times, serif; color: #0f172a;">Amit Sharma</h1>
+                                    <div class="print-contact" id="pv-contact" style="font-size: 9.5pt; color: #475569;">
+                                        Hyderabad, India &bull; amit.sharma@email.com &bull; +91 9999999999 &bull; linkedin.com/in/amit-demo
+                                    </div>
+                                </div>
+                                
+                                <div class="print-section" id="pv-summary-section" style="margin-bottom: 14px;">
+                                    <div class="print-section-title" style="font-size: 11pt; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; margin-bottom: 6px; color: #1e293b; font-family: 'Times New Roman', Times, serif;">Summary</div>
+                                    <p class="print-summary-text" id="pv-summary" style="font-size: 10pt; color: #334155; text-align: justify; margin: 0;">Highly motivated Software Developer with 5+ years of experience designing frontend systems and writing Node services.</p>
+                                </div>
+                                
+                                <div class="print-section" id="pv-experience-section" style="margin-bottom: 14px;">
+                                    <div class="print-section-title" style="font-size: 11pt; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; margin-bottom: 6px; color: #1e293b; font-family: 'Times New Roman', Times, serif;">Professional Experience</div>
+                                    <div id="pv-experience-container" style="display: flex; flex-direction: column; gap: 10px;">
+                                        <!-- Dynamic experience print nodes -->
+                                    </div>
+                                </div>
+
+                                <div class="print-section" id="pv-skills-section" style="margin-bottom: 14px;">
+                                    <div class="print-section-title" style="font-size: 11pt; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; margin-bottom: 6px; color: #1e293b; font-family: 'Times New Roman', Times, serif;">Technical Skills</div>
+                                    <div class="print-skills-text" id="pv-skills" style="font-size: 10pt; color: #334155; line-height: 1.4;">JavaScript, React, Node.js, HTML, CSS, SQL, Git</div>
+                                </div>
+
+                                <div class="print-section" id="pv-education-section" style="margin-bottom: 0;">
+                                    <div class="print-section-title" style="font-size: 11pt; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; margin-bottom: 6px; color: #1e293b; font-family: 'Times New Roman', Times, serif;">Education</div>
+                                    <div id="pv-education-container" style="display: flex; flex-direction: column; gap: 8px;">
+                                        <!-- Dynamic education print nodes -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Live Keyword Injector Sidebar -->
+                    <div class="card keyword-injector-sidebar" id="keyword-injector-panel">
+                        <div class="injector-header">
+                            <h3><i class="fa-solid fa-syringe text-cyan"></i> Keyword Injector</h3>
+                            <button class="btn btn-outline btn-sm" id="btn-toggle-injector" title="Collapse" style="padding: 4px 8px; font-size: 0.7rem;"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                        <p class="injector-subtitle">Keywords from your active job description. <strong class="text-green">Green</strong> = found in resume, <strong class="text-red">Red</strong> = missing (click to copy).</p>
+
+                        <div class="injector-score-bar" id="injector-score-bar">
+                            <div class="injector-score-fill" id="injector-score-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="injector-score-label" id="injector-score-label">Select a target job first</div>
+
+                        <div class="injector-keywords-list scrollbar-styled" id="injector-keywords-container">
+                            <div class="injector-empty-state">
+                                <i class="fa-solid fa-circle-info"></i>
+                                <p>Select a target job from the Job Tracker to see keyword coverage here.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: RESUME SCANNER VIEW -->
+            <section class="content-view" id="scan-view">
+                <div class="scanner-grid">
+                    <!-- Left Column: Resume Input -->
+                    <div class="card scan-input-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-file-invoice"></i> Upload Resume</h3>
+                            <span class="step-badge">Step 1</span>
+                        </div>
+                        
+                        <div class="upload-zone" id="drop-zone">
+                            <input type="file" id="file-input" accept=".pdf" style="display: none;">
+                            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                            <h4>Drag and drop your PDF resume here</h4>
+                            <p>or <span class="highlight-link" id="file-browse-trigger">browse files</span> (PDF format)</p>
+                            <span class="file-limits">Max size: 5MB</span>
+                        </div>
+
+                        <div class="file-success-panel" id="file-success-panel" style="display: none;">
+                            <div class="file-success-icon"><i class="fa-solid fa-file-pdf"></i></div>
+                            <div class="file-details">
+                                <h4 id="uploaded-filename">my_resume.pdf</h4>
+                                <p id="uploaded-filesize">1.2 MB &bull; Extracted successfully</p>
+                            </div>
+                            <button class="btn btn-icon-only btn-danger" id="remove-file-btn" title="Remove File">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+
+                        <div class="text-paste-divider">
+                            <span>OR PASTE TEXT</span>
+                        </div>
+
+                        <div class="paste-zone">
+                            <textarea id="resume-text-input" placeholder="Paste your plain-text resume here... (If not using PDF upload)"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Target Job Preview -->
+                    <div class="card target-job-preview-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-briefcase"></i> Selected Target Job</h3>
+                            <span class="step-badge">Step 2</span>
+                        </div>
+
+                        <div class="active-job-details-wrapper" id="active-job-details-filled" style="display: none;">
+                            <div class="job-card-header">
+                                <span class="status-badge" id="preview-job-status">Target</span>
+                                <h3 id="preview-job-title">Software Engineer</h3>
+                                <p id="preview-job-company">Google &bull; Hyderabad, India (Hybrid)</p>
+                            </div>
+                            
+                            <div class="job-card-body">
+                                <h5>Job Description</h5>
+                                <div class="job-description-excerpt scrollbar-styled" id="preview-job-desc">
+                                    No description available.
+                                </div>
+                            </div>
+                            
+                            <div class="action-bar">
+                                <button class="btn btn-primary btn-block btn-lg glow-button" id="trigger-scan-btn">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Run Intelligent Scan
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="empty-active-job-state text-center" id="active-job-details-empty">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <h4>No Job Selected for Analysis</h4>
+                            <p>Go to the <strong>Job Tracker</strong> tab to select or add a target job before performing a resume scan.</p>
+                            <button class="btn btn-outline" id="go-to-tracker-btn">Go to Job Tracker</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 3: RESULTS VIEW -->
+            <section class="content-view" id="results-view">
+                
+                <!-- TOP SCORE AND INSIGHTS -->
+                <div class="results-header-grid">
+                    <!-- Circular Score Card -->
+                    <div class="card score-card">
+                        <div class="circular-score-wrapper">
+                            <svg class="score-ring" viewBox="0 0 120 120">
+                                <circle class="score-ring-bg" cx="60" cy="60" r="54"></circle>
+                                <circle class="score-ring-fill" cx="60" cy="60" r="54" id="score-circle-path"></circle>
+                            </svg>
+                            <div class="score-text">
+                                <span class="score-num" id="score-percentage">0%</span>
+                                <span class="score-label">ATS MATCH</span>
+                            </div>
+                        </div>
+                        <div class="score-verdict" id="score-verdict-text">
+                            Scanned! Waiting for score.
+                        </div>
+                    </div>
+
+                    <!-- AI Summary & Key Warnings Card -->
+                    <div class="card insights-card">
+                        <h3><i class="fa-solid fa-lightbulb text-yellow"></i> Intelligent Match Summary</h3>
+                        <p class="summary-paragraph" id="analysis-summary-text">
+                            Running intelligent semantic evaluation. If you haven't added an API Key, this uses our localized parsing algorithms.
+                        </p>
+                        <div class="quick-stats-grid">
+                            <div class="quick-stat">
+                                <span class="stat-value text-green" id="stat-matched-keys">0</span>
+                                <span class="stat-name">Skills Matched</span>
+                            </div>
+                            <div class="quick-stat">
+                                <span class="stat-value text-red" id="stat-missing-keys">0</span>
+                                <span class="stat-name">Critical Gaps</span>
+                            </div>
+                            <div class="quick-stat">
+                                <span class="stat-value text-blue" id="stat-star-score">0/10</span>
+                                <span class="stat-name">STAR Bullet Score</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB TABS NAVIGATION -->
+                <div class="tabs-nav">
+                    <button class="tab-btn active" data-tab="tab-skills"><i class="fa-solid fa-diagram-project"></i> Skill Gap Radar</button>
+                    <button class="tab-btn" data-tab="tab-star"><i class="fa-solid fa-circle-check"></i> STAR Grader</button>
+                    <button class="tab-btn" data-tab="tab-heatmap"><i class="fa-solid fa-eye"></i> Eye Heatmap</button>
+                    <button class="tab-btn" data-tab="tab-recruiter"><i class="fa-solid fa-users-gear"></i> Recruiter Panel</button>
+                    <button class="tab-btn" data-tab="tab-interview"><i class="fa-solid fa-chalkboard-user"></i> Interview Prep</button>
+                    <button class="tab-btn" data-tab="tab-ats-guard"><i class="fa-solid fa-shield-halved"></i> ATS Guard</button>
+                </div>
+
+                <!-- TAB PANELS -->
+                <div class="tabs-content">
+                    
+                    <!-- TAB 1: SKILL GAP RADAR -->
+                    <div class="tab-panel active" id="tab-skills">
+                        <div class="radar-tab-grid">
+                            <div class="radar-chart-container card">
+                                <h4>Skill Dimension Comparison</h4>
+                                <div class="svg-container" id="radar-chart-svg-wrapper">
+                                    <!-- Dynamic Radar SVG will be injected here -->
+                                </div>
+                            </div>
+                            <div class="skills-lists-container">
+                                <div class="card matched-skills-card">
+                                    <h4 class="text-green"><i class="fa-solid fa-circle-check"></i> Matched Keywords (<span id="matched-count">0</span>)</h4>
+                                    <div class="keyword-badges-list" id="matched-keywords-list">
+                                        <!-- Dynamic badges -->
+                                    </div>
+                                </div>
+                                <div class="card missing-skills-card">
+                                    <h4 class="text-red"><i class="fa-solid fa-triangle-exclamation"></i> Missing Keywords (<span id="missing-count">0</span>)</h4>
+                                    <div class="keyword-badges-list" id="missing-keywords-list">
+                                        <!-- Dynamic badges -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: STAR GRADER & REWRITER -->
+                    <div class="tab-panel" id="tab-star">
+                        <!-- Web AI Prompter Card -->
+                        <div class="card web-prompter-card" style="margin-bottom: 24px;">
+                            <div class="panel-header" style="border: none; margin-bottom: 12px; padding-bottom: 0;">
+                                <div>
+                                    <h3><i class="fa-solid fa-wand-magic-sparkles text-cyan"></i> Reframe with Web AI (Free Mode)</h3>
+                                    <p>Copy this custom pre-compiled prompt, click a link below to open ChatGPT or Gemini in a new tab, and paste it to get high-quality STAR reframe suggestions for free!</p>
+                                </div>
+                            </div>
+                            
+                            <div class="prompt-box-container" style="position: relative; margin-top: 14px; margin-bottom: 16px;">
+                                <textarea id="web-ai-prompt-area" readonly style="width: 100%; height: 120px; background: var(--bg-tertiary); border: 1px solid var(--glass-border); border-radius: var(--border-radius-sm); color: var(--text-secondary); padding: 12px 16px; font-family: monospace; font-size: 0.8rem; resize: none; outline: none;"></textarea>
+                                <button class="btn btn-primary" id="btn-copy-prompt" style="position: absolute; right: 12px; bottom: 12px; padding: 6px 12px; font-size: 0.78rem;">
+                                    <i class="fa-solid fa-copy"></i> Copy Prompt
+                                </button>
+                            </div>
+                            
+                            <div style="display: flex; gap: 12px;">
+                                <button class="btn btn-outline" id="btn-open-chatgpt" style="flex: 1; border-color: #10a37f; color: #10a37f; background: rgba(16, 163, 127, 0.03);">
+                                    <i class="fa-solid fa-comments"></i> Open ChatGPT Web
+                                </button>
+                                <button class="btn btn-outline" id="btn-open-gemini" style="flex: 1; border-color: #1a73e8; color: #1a73e8; background: rgba(26, 115, 232, 0.03);">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Open Gemini Web
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card star-grader-card">
+                            <div class="panel-header">
+                                <div>
+                                    <h3>STAR Bullet Point Grader</h3>
+                                    <p>Recruiters look for <strong>Situation, Task, Action, Result</strong> formats. We scan for metrics, impact numbers, and action verbs.</p>
+                                </div>
+                                <div class="star-rating-badge" id="star-overall-grade">A-</div>
+                            </div>
+                            <div class="star-bullets-list" id="star-bullets-container">
+                                <!-- Dynamic bullet items -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: EYE-TRACKING HEATMAP -->
+                    <div class="tab-panel" id="tab-heatmap">
+                        <div class="heatmap-workspace-grid">
+                            <div class="card heatmap-controls">
+                                <h3>Recruiter Heatmap Simulation</h3>
+                                <p>Simulates where a recruiter's eyes linger during their initial 6-second scan. Red zones denote maximum interest (e.g. bolded job titles, metrics, summary section).</p>
+                                
+                                <div class="control-group">
+                                    <label>Heatmap Opacity</label>
+                                    <input type="range" id="heatmap-opacity" min="0" max="100" value="65">
+                                </div>
+
+                                <div class="control-group">
+                                    <label>Visual Mode</label>
+                                    <div class="toggle-buttons">
+                                        <button class="btn btn-outline active" id="btn-heatmap-combined">Combined</button>
+                                        <button class="btn btn-outline" id="btn-heatmap-only">Heatmap Only</button>
+                                    </div>
+                                </div>
+
+                                <div class="heatmap-legend">
+                                    <span class="legend-title">Attention Key:</span>
+                                    <div class="legend-scale">
+                                        <span class="scale-point color-red">Critical Focus</span>
+                                        <span class="scale-point color-yellow">High Scan</span>
+                                        <span class="scale-point color-green">Read</span>
+                                        <span class="scale-point color-blue">Ignored</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card resume-canvas-card">
+                                <div class="resume-view-scroll-container">
+                                    <div class="resume-sheet" id="resume-sheet-element">
+                                        <div class="resume-text-rendering" id="resume-text-render-container">
+                                            <!-- Structured parsed resume rendering -->
+                                        </div>
+                                        <canvas class="heatmap-canvas" id="heatmap-overlay-canvas"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: RECRUITER PERSONA PANEL -->
+                    <div class="tab-panel" id="tab-recruiter">
+                        <div class="persona-grid">
+                            <!-- Persona 1: ATS -->
+                            <div class="card persona-card" id="persona-ats">
+                                <div class="persona-header">
+                                    <div class="persona-avatar"><i class="fa-solid fa-robot"></i></div>
+                                    <div class="persona-identity">
+                                        <h4>The ATS Algorithm</h4>
+                                        <span class="persona-title">Automated Filter System</span>
+                                    </div>
+                                    <div class="persona-verdict verdict-pass" id="persona-ats-verdict">PASS</div>
+                                </div>
+                                <div class="persona-body">
+                                    <h5>Score: <span id="persona-ats-score">0/100</span></h5>
+                                    <div class="feedback-text scrollbar-styled" id="persona-ats-feedback">
+                                        Feedback loading...
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Persona 2: Recruiter -->
+                            <div class="card persona-card" id="persona-recruiter">
+                                <div class="persona-header">
+                                    <div class="persona-avatar"><i class="fa-solid fa-address-book"></i></div>
+                                    <div class="persona-identity">
+                                        <h4>The Tech Recruiter</h4>
+                                        <span class="persona-title">6-Second Screener</span>
+                                    </div>
+                                    <div class="persona-verdict verdict-warn" id="persona-recruiter-verdict">SKEPTICAL</div>
+                                </div>
+                                <div class="persona-body">
+                                    <h5>Score: <span id="persona-recruiter-score">0/100</span></h5>
+                                    <div class="feedback-text scrollbar-styled" id="persona-recruiter-feedback">
+                                        Feedback loading...
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Persona 3: Hiring Manager -->
+                            <div class="card persona-card" id="persona-manager">
+                                <div class="persona-header">
+                                    <div class="persona-avatar"><i class="fa-solid fa-user-tie"></i></div>
+                                    <div class="persona-identity">
+                                        <h4>Hiring Manager</h4>
+                                        <span class="persona-title">Team Leader & Decision Maker</span>
+                                    </div>
+                                    <div class="persona-verdict verdict-fail" id="persona-manager-verdict">HOLD</div>
+                                </div>
+                                <div class="persona-body">
+                                    <h5>Score: <span id="persona-manager-score">0/100</span></h5>
+                                    <div class="feedback-text scrollbar-styled" id="persona-manager-feedback">
+                                        Feedback loading...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5: INTERVIEW PREP -->
+                    <div class="tab-panel" id="tab-interview">
+                        <div class="card interview-card">
+                            <h3><i class="fa-solid fa-comments-question"></i> Contextual Mock Interview Coach</h3>
+                            <p>We've generated custom questions based on the gaps and skills in your resume compared to the job description. Practice writing your response below.</p>
+                            
+                            <div class="interview-questions-list" id="interview-questions-container">
+                                <!-- Dynamic interview items -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 6: ATS COMPLIANCE GUARD -->
+                    <div class="tab-panel" id="tab-ats-guard">
+                        <div class="card ats-guard-card">
+                            <div class="ats-guard-header">
+                                <div>
+                                    <h3><i class="fa-solid fa-shield-halved text-cyan"></i> ATS Compliance Guard</h3>
+                                    <p>Your resume is scanned for <strong>8 formatting rules</strong> that silently cause ATS parsers to drop or mangle content — even when keyword scores are high.</p>
+                                </div>
+                                <div class="ats-guard-summary-badge" id="ats-guard-summary-badge">
+                                    <span class="guard-pass-count" id="guard-pass-count">0</span>/<span class="guard-total-count">8</span>
+                                    <span class="guard-label">Checks Passed</span>
+                                </div>
+                            </div>
+
+                            <div class="ats-guard-rules-grid" id="ats-guard-rules-container">
+                                <!-- Dynamic rule check cards rendered by ATSGuard module -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 4: SETTINGS VIEW -->
+            <section class="content-view" id="settings-view">
+                <div class="card settings-card">
+                    <h2><i class="fa-solid fa-gears text-purple"></i> Application Configuration</h2>
+                    <p>To enable intelligent, semantic resume matching and detailed AI feedback, connect to your LLM API. The API key is stored locally on your device and is never sent to any server other than the direct API endpoint.</p>
+
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label for="ai-engine-select">Active AI Engine</label>
+                            <select id="ai-engine-select">
+                                <option value="gemini">Google Gemini (Recommended - Free Tier available)</option>
+                                <option value="openai">OpenAI GPT-4o</option>
+                                <option value="webllm">WebLLM Local GPU (In-Browser Privacy)</option>
+                                <option value="local">None (Use Local NLP Rules Mode)</option>
+                            </select>
+                        </div>
+
+                        <!-- Gemini Config -->
+                        <div class="engine-config-fields" id="gemini-fields">
+                            <div class="form-group">
+                                <label for="gemini-key">Gemini API Key</label>
+                                <div class="input-with-icon">
+                                    <i class="fa-solid fa-key"></i>
+                                    <input type="password" id="gemini-key" placeholder="AIzaSy...">
+                                </div>
+                                <span class="help-text">Get a free-tier key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio</a>.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="gemini-model">Gemini Model</label>
+                                <select id="gemini-model">
+                                    <option value="gemini-1.5-flash">gemini-1.5-flash (Fast & recommended)</option>
+                                    <option value="gemini-1.5-pro">gemini-1.5-pro (In-depth analysis)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- OpenAI Config -->
+                        <div class="engine-config-fields" id="openai-fields" style="display: none;">
+                            <div class="form-group">
+                                <label for="openai-key">OpenAI API Key</label>
+                                <div class="input-with-icon">
+                                    <i class="fa-solid fa-key"></i>
+                                    <input type="password" id="openai-key" placeholder="sk-proj-...">
+                                </div>
+                                <span class="help-text">Get an API key from the <a href="https://platform.openai.com/" target="_blank" rel="noopener">OpenAI Developer Platform</a>.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="openai-model">OpenAI Model</label>
+                                <select id="openai-model">
+                                    <option value="gpt-4o-mini">gpt-4o-mini (Cost-effective & fast)</option>
+                                    <option value="gpt-4o">gpt-4o (Powerful and comprehensive)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- WebLLM Config -->
+                        <div class="engine-config-fields" id="webllm-fields" style="display: none;">
+                            <div class="form-group">
+                                <label for="webllm-model">Local WebGPU Model</label>
+                                <select id="webllm-model" style="width: 100%; background: var(--bg-tertiary); border: 1px solid var(--glass-border); padding: 10px; border-radius: var(--border-radius-sm); color: var(--text-primary);">
+                                    <option value="Qwen/Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Qwen2.5-1.5B Instruct (Fastest - ~1.1GB)</option>
+                                    <option value="gemma-2b-it-q4f16_1-MLC">Gemma-2B-it (~1.6GB)</option>
+                                </select>
+                                <span class="help-text">First load will download the weights and cache them in your browser. Needs WebGPU.</span>
+                            </div>
+                            
+                            <div class="webllm-status-card" id="webllm-loading-card" style="display: none; margin-top: 14px; padding: 16px; background-color: var(--bg-tertiary); border-radius: var(--border-radius-sm); border: 1px solid var(--glass-border);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-weight: 600; font-size: 0.85rem;" id="webllm-loading-title"><i class="fa-solid fa-spinner fa-spin text-cyan"></i> Loading Model weights...</span>
+                                    <span style="font-size: 0.8rem; font-weight: bold; color: var(--accent-cyan);" id="webllm-download-pct">0%</span>
+                                </div>
+                                <div class="loading-bar" style="height: 6px; background-color: var(--bg-primary); border-radius: 10px; overflow: hidden;">
+                                    <div class="loading-bar-fill" id="webllm-download-progress" style="width: 0%; height: 100%; background: var(--accent-cyan); border-radius: 10px; transition: width 0.2s;"></div>
+                                </div>
+                                <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;" id="webllm-download-status">Initializing model downloader...</p>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons-row">
+                            <button class="btn btn-primary" id="save-settings-btn"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
+                            <span class="save-status-msg" id="settings-status-message"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL: ADD / EDIT JOB -->
+    <div class="modal-backdrop" id="job-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Add Target Job</h3>
+                <button class="close-btn" id="close-job-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="job-form">
+                    <input type="hidden" id="job-id">
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="job-title-input">Job Title *</label>
+                            <input type="text" id="job-title-input" required placeholder="e.g. Senior Frontend Engineer">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="job-company-input">Company *</label>
+                            <input type="text" id="job-company-input" required placeholder="e.g. Stripe">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="job-location-input">Location</label>
+                            <input type="text" id="job-location-input" placeholder="e.g. San Francisco, CA (Hybrid)">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="job-status-input">Status</label>
+                            <select id="job-status-input">
+                                <option value="Target">Target</option>
+                                <option value="Applied">Applied</option>
+                                <option value="Interviewing">Interviewing</option>
+                                <option value="Shortlisted">Shortlisted</option>
+                                <option value="Rejected">Rejected</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="job-type-input">Work Type</label>
+                            <select id="job-type-input">
+                                <option value="Full-time">Full-time</option>
+                                <option value="Contract">Contract</option>
+                                <option value="Part-time">Part-time</option>
+                                <option value="Internship">Internship</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="job-desc-input">Job Description / Requirements *</label>
+                        <textarea id="job-desc-input" required placeholder="Paste full job posting description here..." style="height: 180px;"></textarea>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="cancel-job-modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="save-job-submit-btn">Save Job</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCANNING FULLSCREEN OVERLAY LOADING -->
+    <div class="scanner-overlay" id="scanning-loading-overlay">
+        <div class="scanner-overlay-content">
+            <div class="scanner-animation-wrapper">
+                <div class="doc-icon"><i class="fa-solid fa-file-invoice"></i></div>
+                <div class="scan-laser-line"></div>
+            </div>
+            <h3 id="scanning-status-title">Parsing Resume Document</h3>
+            <p id="scanning-status-detail">Initializing local PDF.js workers...</p>
+            <div class="loading-bar">
+                <div class="loading-bar-fill" id="scanning-loading-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="app.js"></script>
+</body>
+</html>
