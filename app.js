@@ -3,8 +3,28 @@
  * Modular Frontend Core Controller
  */
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+// Configure PDF.js worker - safely guard in case CDN fails to load
+const PDFJS_CDN_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
+const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+function initPdfJs() {
+    if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+        console.log('ATS Copilot: PDF.js initialized from CDN.');
+    } else {
+        console.warn('ATS Copilot: PDF.js not loaded from CDN. Attempting dynamic load...');
+        const script = document.createElement('script');
+        script.src = PDFJS_CDN_URL;
+        script.onload = () => {
+            if (typeof pdfjsLib !== 'undefined') {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+                console.log('ATS Copilot: PDF.js dynamically loaded successfully.');
+            }
+        };
+        script.onerror = () => console.warn('ATS Copilot: PDF.js CDN also failed. PDF parsing will be unavailable.');
+        document.head.appendChild(script);
+    }
+}
 
 // ==========================================
 // 1. DATABASE MODULE (Job Tracker Storage)
@@ -670,6 +690,8 @@ const UI = {
     init() {
         console.log("ATS Copilot: UI initialization started.");
         try {
+            // Safely initialize PDF.js now that the DOM is ready
+            initPdfJs();
             this.bindEvents();
             console.log("ATS Copilot: Events bound successfully.");
             this.loadSettings();
